@@ -304,6 +304,28 @@ html[data-theme=book] .wed.div small{border:1px solid #7A2E1F}
 html[data-theme=book] #person .h3,html[data-theme=book] .h3{color:var(--goldInk,#6E5520)!important;border-color:rgba(176,141,58,.5)!important}
 html[data-theme=book] #fvSvg .pl{stroke:#6B4A2B!important;stroke-opacity:.9!important;stroke-width:4px!important;stroke-linecap:round;stroke-linejoin:round}
 html[data-theme=book] #bookTree{opacity:1}
+/* ===== S-003 relationship view + S-004 card actions ===== */
+.relAct{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:10px 0 0;flex-direction:row}
+.relAct .btn{min-height:44px;font-size:15px;cursor:pointer}
+.relAct .relMe.on{border-color:var(--gold,#ffd700);color:var(--goldInk,#ffd700)}
+#infoBody .relAct{justify-content:flex-start}
+#rel{position:fixed;z-index:50;left:50%;top:12px;transform:translateX(-50%);width:min(600px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;background:var(--panel,#0E1228);color:var(--text,#fff);border:1px solid var(--edge,#4A57A6);border-radius:16px;padding:14px 16px;box-shadow:0 10px 40px #0008;-webkit-overflow-scrolling:touch}
+#rel.relPh{top:auto;bottom:0;left:0;transform:none;width:100%;max-height:60vh;border-radius:16px 16px 0 0;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+#rel.v2{top:12px;bottom:12px;max-height:none}#rel.v2.relPh{top:0;bottom:0;max-height:none;border-radius:0}
+.relHd{display:flex;align-items:flex-start;gap:10px}.relHd h2{flex:1;margin:0;font-size:20px;line-height:1.3;color:var(--accent,#9FB0FF)}
+.relX{min-width:44px;min-height:44px}
+.relBar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 8px;align-items:center}.relBar .btn{min-height:44px;cursor:pointer}
+.relSeg{display:flex;border:1px solid var(--edge,#4A57A6);border-radius:12px;background:var(--panel2,#151a3a);padding:2px}
+.relSeg button{min-height:40px;min-width:44px;padding:0 14px;border:0;background:none;color:var(--sec,#ccd);font:inherit;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer}
+.relSeg button[aria-pressed=true]{background:var(--accent,#9FB0FF);color:var(--panel,#0B0F24)}
+.relUrl{width:100%;box-sizing:border-box;font-size:13px;padding:6px 8px;border-radius:8px;border:1px solid var(--edge,#4A57A6);background:var(--panel2,#151a3a);color:var(--sec,#ccd)}
+.relPath{display:none}
+#rel.v2 .relPath{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:14px}
+.relCard{display:flex;flex-direction:column;align-items:flex-start;min-height:52px;width:min(320px,100%);padding:6px 12px 6px 16px;border-radius:12px;border:1.5px solid var(--ghost,#3A4580);background:var(--cardBg,#0E1228);box-shadow:inset 5px 0 0 var(--fc);color:var(--ink,#fff);font:inherit;text-align:left;cursor:pointer}
+.relCard b{font-size:16px}.relCard small{font-size:13px;color:var(--sec,#ccd)}
+.relCard.me,.relCard.them{border-color:var(--accent,#9FB0FF);border-width:2.5px}
+.relArr{font-size:13px;color:var(--sec,#ccd)}
+.relHd h2:focus{outline:none}
 </style></head><body>
 <div id="g" role="img" aria-label="Interactive 3D family tree. Use the search box or the list of relatives to explore."></div>
 <div id="fallback" role="region" aria-label="Family list"><div id="fbmsg" role="status"></div><div id="fblist"></div></div>
@@ -5285,6 +5307,7 @@ function showInfo(pid){const p=byId[pid],sb=sibs(pid);
  ${kids[pid].length?'':'<div class="h3">Children (0)</div><div class="none">—</div>'}
  <div class="h3">Siblings (${sb.length})</div>${chips(sb)}
  <div class="h3">Path</div><nav id="crumb" aria-label="Breadcrumb">${crumbs}</nav>
+ <div class="relAct" data-pid="${esc(pid)}">${relActs(pid)}</div>
  <div id="fvXL"></div>
  <div class="sub" style="margin-top:12px">Highlighted branch: ${branch.size} people (ancestors, descendants &amp; spouses)</div>`;
  $('person').hidden=false;$('person').setAttribute('aria-label','Details for '+p.name)}
@@ -5612,6 +5635,67 @@ fvSvg=(o=>function(){o();if(TH.t!=='book')return;const S=$('fvSvg'),pl=S&&S.quer
  S.insertAdjacentHTML('beforeend',`<g class="bkLeaves" fill-opacity=".85">${g.join('')}</g>`)})(fvSvg);
 window.__bk={get branches(){return BKB.bm?BKB.bm.count:0},get leaves(){return BKB.leafN},get on(){return !!(BKB.bm&&BKB.bm.visible)},get bgLeaves(){return window.__bkLeaves||0},fvLeaves:()=>document.querySelectorAll('#fvSvg .bkLeaves path').length};
 
+/* ---------- S-003 relationship deep link (#me=pX&them=pY) + S-004 suggest a correction ---------- */
+const REL_RX=/^#me=(p\d{1,6})&them=(p\d{1,6})$/,PID_RX=/^p\d{1,6}$/;
+let REL_ME=null;try{const m=localStorage.getItem('kft-me');if(m&&PID_RX.test(m)&&byId[m])REL_ME=m}catch(e){}
+let REL=null; // {a,b,ids,view}
+const relOrd=k=>k.replace(/^(\d+)(st|nd|rd|th) /,(m,n)=>(['','first','second','third','fourth','fifth','sixth'][+n]||m.trim())+' ');
+function relLinkIds(h){const m=(h==null?location.hash:h||'').match(REL_RX);if(!m)return null;const a=m[1],b=m[2];return a!==b&&byId[a]&&byId[b]?{a,b}:null}
+function relBFS(a,b){const prev=new Map([[a,null]]),q=[a];while(q.length){const x=q.shift();if(x===b)break;for(const y of [...par[x],...kids[x],...sps[x]])if(!prev.has(y)){prev.set(y,x);q.push(y)}}
+ if(!prev.has(b))return null;const ids=[];for(let x=b;x!=null;x=prev.get(x))ids.unshift(x);return ids}
+function relInfo(a,b){const A=byId[a].name,B=byId[b].name;
+ if(sps[a].includes(b))return {s:`${B} is ${A}'s ${isDiv(a,b)?'former spouse':'spouse'}`,ids:[a,b]};
+ const r=bloodRel(a,b);if(r&&r.paths.length)return {s:`${B} is ${A}'s ${relOrd(r.kin)}`,ids:r.paths[0].ids};
+ let best=null;const keep=o=>{if(o&&(!best||o.ids.length<best.ids.length))best=o};
+ sps[b].forEach(s=>{const q=s===a?null:bloodRel(a,s);if(q&&q.paths.length)keep({s:`${B} is married to ${A}'s ${relOrd(q.kin)}, ${byId[s].name}`,ids:q.paths[0].ids.concat(b)})});
+ sps[a].forEach(s=>{const q=s===b?null:bloodRel(s,b);if(q&&q.paths.length)keep({s:`${B} is ${A}'s spouse ${byId[s].name}'s ${relOrd(q.kin)}`,ids:[a].concat(q.paths[0].ids)})});
+ if(best)return best;const ids=relBFS(a,b);
+ return ids?{s:`${B} and ${A} are related by marriage (${ids.length-1} steps)`,ids}:{s:`No recorded connection between ${A} and ${B}`,ids:[a,b],none:true}}
+function relURL(a,b){return location.href.replace(/[?#].*$/,'')+'#me='+a+'&them='+b}
+const relEl=document.createElement('div');relEl.id='rel';relEl.setAttribute('role','dialog');relEl.setAttribute('aria-modal','false');relEl.setAttribute('aria-labelledby','relS');relEl.hidden=true;document.body.append(relEl);
+function relRender(){if(!REL)return;const {a,b,ids,s,view}=REL,has3d=!!G;
+ const steps=ids.map((x,i)=>{const r=i?relW(ids[i-1],x):'';return (i?`<span class="relArr" aria-hidden="true">${r?esc(r):'·'} ↓</span>`:'')+`<button class="relCard${x===a?' me':''}${x===b?' them':''}" data-rid="${esc(x)}" style="--fc:${FAM_COL[byId[x].family]||TH.c('#ccc')}"><b>${esc(label(byId[x]))}</b><small>${x===a?'me':x===b?'them':r?esc(r)+' of '+esc(firstName(ids[i-1])):''}</small></button>`}).join('');
+ relEl.className=(view==='2d'?'v2':'v3')+(isPhoneW()?' relPh':'');
+ relEl.innerHTML=`<div class="relHd"><h2 id="relS" tabindex="-1">${esc(s)}</h2><button class="btn relX" data-ract="close" aria-label="Close relationship view">✕</button></div>
+ <div class="relBar">${has3d?`<div class="relSeg" role="group" aria-label="Path view"><button data-ract="3d" aria-pressed="${view!=='2d'}">3D path</button><button data-ract="2d" aria-pressed="${view==='2d'}">2D path</button></div>`:''}<button class="btn" data-ract="copy">🔗 Copy link</button></div>
+ <input class="relUrl" readonly aria-label="Relationship link" value="${esc(relURL(a,b))}">
+ <div class="relPath" aria-label="Path between ${esc(byId[a].name)} and ${esc(byId[b].name)}">${steps}</div>`;
+ relEl.hidden=false}
+function relShow(a,b,view){if(!byId[a]||!byId[b]||a===b)return false;const o=relInfo(a,b);
+ if(FV)fvClose();closeHow();if(typeof closeMenu==='function')try{closeMenu()}catch(e){}
+ REL={a,b,ids:o.ids,s:o.s,view:view||(G?'3d':'2d')};const set=new Set(o.ids);
+ focus=b;branch=set;$('person').hidden=true;try{applyOffset(0)}catch(e){}refresh();
+ if(G){setTimeout(()=>{if(REL)G.zoomToFit(900,isPhoneW()?60:120,n=>set.has(n.id))},60)}
+ relRender();$('relS').focus({preventScroll:true});return true}
+function relClose(go){if(!REL)return;const b=REL.b;REL=null;relEl.hidden=true;relEl.innerHTML='';if(go)select(go,true);else select(b,false)}
+relEl.addEventListener('click',e=>{const t=e.target.closest('[data-ract]');if(t){const k=t.dataset.ract;
+  if(k==='close')relClose();else if(k==='3d'||k==='2d'){REL.view=k;relRender()}
+  else if(k==='copy'){const u=relURL(REL.a,REL.b),inp=relEl.querySelector('.relUrl'),done=ok=>{const tt=$('toast');tt.textContent=ok?'Link copied':'Copy the link from the box';tt.style.display='block';setTimeout(()=>tt.style.display='none',2000);if(!ok&&inp){inp.focus();inp.select()}};
+   try{navigator.clipboard.writeText(u).then(()=>done(true),()=>done(false))}catch(_){done(false)}}
+  return}
+ const c=e.target.closest('[data-rid]');if(c)relClose(c.dataset.rid)});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&REL){e.stopImmediatePropagation();relClose()}},true);
+addEventListener('resize',()=>{if(REL)relRender()});
+addEventListener('hashchange',()=>{const r=relLinkIds();if(r)relShow(r.a,r.b)});
+/* action buttons on a person's card: suggest a correction, pick me, how are we related */
+function relActs(pid){if(!PID_RX.test(pid)||!byId[pid])return '';const nm=esc(firstName(pid));
+ const me=REL_ME===pid?`<button class="btn relMe on" data-act="unme" data-pid="${pid}" aria-pressed="true">★ This is me</button>`:`<button class="btn relMe" data-act="me" data-pid="${pid}" aria-pressed="false">☆ This is me</button>`;
+ const how=REL_ME&&REL_ME!==pid?`<button class="btn" data-act="rel" data-pid="${pid}">How is ${nm} related to me?</button>`:'';
+ return `${how}${me}<button class="btn" data-act="fix" data-pid="${pid}">✎ Suggest a correction</button>`}
+function relSyncActs(){document.querySelectorAll('.relAct[data-pid]').forEach(d=>d.innerHTML=relActs(d.dataset.pid))}
+fvRender=(o=>function(pid){o(pid);const T=$('fvTree'),m=T.querySelector('.fvSec.mid')||T.querySelector('.fvMid');if(m){m.insertAdjacentHTML('afterend',`<div class="fvSec relAct fvAct" data-pid="${esc(pid)}">${relActs(pid)}</div>`);fvSvg()}})(fvRender);
+function mailAddr(){return [109,106,107,104,111,117,114,121].map(c=>String.fromCharCode(c)).join('')+String.fromCharCode(64)+['gmail','com'].join('.')}
+function suggestURL(pid){const p=byId[pid];if(!p||!PID_RX.test(pid))return null;const nm=p.name;
+ const sub=`Family tree correction: ${nm} (${pid})`,body=`Person: ${nm} (${pid})\nLink: ${location.href.replace(/[?#].*$/,'')}#${pid}\n\nWhat's wrong:\n\n\nCorrect info:\n\n\nSource / how you know:\n\n`;
+ return 'mailto:'+mailAddr()+'?subject='+encodeURIComponent(sub)+'&body='+encodeURIComponent(body)}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act][data-pid]');if(!b)return;const pid=b.dataset.pid;if(!PID_RX.test(pid)||!byId[pid])return;e.stopPropagation();const k=b.dataset.act,tt=$('toast');
+ if(k==='fix'){const u=suggestURL(pid);location.href=u}
+ else if(k==='me'||k==='unme'){REL_ME=k==='me'?pid:null;try{REL_ME?localStorage.setItem('kft-me',pid):localStorage.removeItem('kft-me')}catch(_){}relSyncActs();
+  tt.textContent=REL_ME?`Saved ${byId[pid].name} as “me”. Now open anyone and tap “How is … related to me?”`:'Cleared “me”';tt.style.display='block';setTimeout(()=>tt.style.display='none',3000)}
+ else if(k==='rel'&&REL_ME)relShow(REL_ME,pid)},true);
+function relFromURL(){const r=relLinkIds();return r?relShow(r.a,r.b):false}
+
+
 /* ---------- menu (phone) ---------- */
 function openMenu(){$('ctrls').dataset.open='true';$('menuBtn').setAttribute('aria-expanded','true');$('colorBtn').focus()}
 function closeMenu(){if($('ctrls').dataset.open!=='true')return;$('ctrls').dataset.open='false';$('menuBtn').setAttribute('aria-expanded','false');if(isPhoneW())$('menuBtn').focus()}
@@ -5670,7 +5754,7 @@ addEventListener('resize',layout);layout();
 /* ---------- opening view: zoom onto Me, immediate family labelled ---------- */
 const START='p2',linkPid=()=>{let m=(location.hash||'').match(/^#(?:id=|p=|person=)?(p\d+)$/);if(!m)m=(location.search||'').match(/[?&](?:id|p|person)=(p\d+)/);return m&&byId[m[1]]?m[1]:null};
 window.__start={START,get linked(){return linkPid()}};
-setTimeout(()=>{const s=linkPid()||(byId[START]?START:ME);if(s)select(s,false);else if(G)G.zoomToFit(1200,40)},300);
+setTimeout(()=>{if(typeof relFromURL==='function'&&relFromURL())return;const s=linkPid()||(byId[START]?START:ME);if(s)select(s,false);else if(G)G.zoomToFit(1200,40)},300);
 addEventListener('hashchange',()=>{const s=linkPid();if(s&&(!FV||FV.pid!==s))select(s,true)});
 /* one-time touch tip */
 if(isTouch&&G){let seen=false;try{seen=localStorage.getItem('kft-tip')==='1';localStorage.setItem('kft-tip','1')}catch(e){}
