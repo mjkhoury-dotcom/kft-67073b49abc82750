@@ -179,6 +179,18 @@ body.fvOn .fab,body.fvOn #help{display:none!important}
 .pills{min-width:0;max-width:100%}.fvSec{min-width:0}
 #fv.A .card{background:radial-gradient(circle at 20px 50%,#0E122800 0 11px,#0E1228f0 12px)}
 #fv.A .card.pill{background:radial-gradient(circle at 20px 50%,#0E122800 0 11px,#0E1228f0 12px)}
+
+/* ===== navigation: breadcrumb, morph, focus glow ===== */
+#fvCrumb .sep{flex:none;padding:0 2px}#fvCrumb .ell{flex:none;padding:0 4px}
+#fvCrumb small{font-size:13px;color:var(--sec);text-decoration:none;font-weight:400}
+#fvCrumb b.cur{flex:none;display:inline-block;max-width:none}#fvCrumb b.cur small{color:#C9D1F5}
+.card.f{box-shadow:inset 5px 0 0 var(--fc)}.card.f.star{box-shadow:inset 5px 0 0 var(--fc)}
+.card.f::after{content:'';position:absolute;inset:-3px;border-radius:14px;box-shadow:0 0 18px #7F9BFF88;pointer-events:none;opacity:1;transition:opacity 300ms ease}
+.card.f.star::after{box-shadow:0 0 18px #FFD23F66}#fv.morph .card.f::after{opacity:0;transition:none}
+.card .nm:focus{outline:2px solid #9FB0FF;outline-offset:2px;border-radius:4px}
+.fvGhosts{position:fixed;z-index:3;overflow:hidden;pointer-events:none}.fvGhosts>.ghost{position:absolute;margin:0;box-sizing:border-box}.fvGhosts>#fvTree,.fvGhosts>div:not(.card){position:absolute}
+.fvRole{position:absolute;left:8px;top:-15px;z-index:4;white-space:nowrap;font-size:13px;font-weight:600;line-height:1;padding:5px 10px;border-radius:12px;background:#FFD23F;color:#141833;pointer-events:none;box-shadow:0 2px 8px #0008}
+@media (max-width:700px){#fvCrumb{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}#fvCrumb::-webkit-scrollbar{display:none}#fvCrumb button{max-width:150px}#fvCrumb b.cur{padding-right:12px}}
 </style></head><body>
 <div id="g" role="img" aria-label="Interactive 3D family tree. Use the search box or the list of relatives to explore."></div>
 <div id="fallback" role="region" aria-label="Family list"><div id="fbmsg" role="status"></div><div id="fblist"></div></div>
@@ -5176,7 +5188,9 @@ $('zoomIn').onclick=()=>zoomBy(.7);$('zoomOut').onclick=()=>zoomBy(1.45);
 document.body.append(document.getElementById("fv"),document.getElementById("fvHow"));
 /* ---------- FOCUS VIEW: flatten to card tree (option A in-scene tween; option B card overlay fallback) ---------- */
 const RM=matchMedia('(prefers-reduced-motion: reduce)');
-const FT={move:900,open:1100,refocus:450,exit:700,rm:150};
+const FX={on:true,glide:true};const FT={glide:650,morph:600,morphPh:520,move:900,open:1100,refocus:450,exit:700,rm:150,crumb:200,pill:1200,lock:150};
+let fvFwd=true,fvLockUntil=0,fvM=null,fvDots=null,fvNewCrumb=false;const fvLocked=()=>performance.now()<fvLockUntil;const fvRect=el=>(fvDots&&fvDots.get(el))||el.getBoundingClientRect();
+const fvLive=document.createElement('div');fvLive.id='fvLive';fvLive.className='sr';fvLive.setAttribute('aria-live','polite');document.body.append(fvLive);
 const fvHome=new Map(),pinned=new Set();let fvAnim=0,fvCam=null,fvTimer=0,fvShowAll={},fvSibAll={},fvPairs={},fvScrollRaf=0;
 const nById=x=>nodes.find(m=>m.id===x);
 const MYLINE=(()=>{const s=new Set();if(ME){s.add(ME);(function up(x){par[x].forEach(y=>{if(!s.has(y)){s.add(y);up(y)}})})(ME)}return s})();
@@ -5236,8 +5250,11 @@ function fvHTML(pid){const g=fvGroups(pid),cross=fvCross(g.set,pid),ph=isPhoneW(
   ${sibMore?`<div class="fvSec" style="margin-top:-28px">${sibMore}</div>`:''}
   <div class="fvSec"><div class="fvLbl">Children (${g.C.length})</div>${g.C.length?kidsHTML:'<div class="none">None recorded</div>'}</div>`}
  return {h:h+'<svg id="fvSvg" aria-hidden="true"></svg>',g,cross,stk}}
-function fvCrumbs(pid){const ph=isPhoneW();let hs=hist.map((h,i)=>({h,i}));let pre='';if(ph&&hs.length>1){hs=hs.slice(-1);pre='<span aria-hidden="true">…</span> › '}else if(hs.length>3){hs=hs.slice(-3);pre='<span aria-hidden="true">…</span> › '}
- return `<button data-crumb="-1" aria-label="Back to 3D sky">3D</button> › `+pre+hs.map(o=>`<button data-crumb="${o.i}">${esc(byId[o.h].name.split(' ')[0])}</button> › `).join('')+`<b>${esc(byId[pid].name)}</b>`}
+function relW(a,b){if(!a||!b||a===b)return '';if((kids[a]||[]).includes(b))return 'child';if((par[a]||[]).includes(b))return 'parent';if((sps[a]||[]).includes(b))return 'spouse';if(sibs(b).includes(a))return 'sibling';return ''}
+function fvCrumbs(pid){const ph=isPhoneW(),all=hist.concat(pid),N=ph?2:5,st=Math.max(0,all.length-N),lab=i=>{const r=i?relW(all[i-1],all[i]):'';return r?`<small>${r}</small> `:''};
+ let h=`<button data-crumb="-1" aria-label="Back to 3D sky">3D</button><span class="sep" aria-hidden="true">›</span>`+(st>0?'<span class="ell" aria-hidden="true">…</span><span class="sep" aria-hidden="true">›</span>':'');
+ for(let i=st;i<all.length-1;i++)h+=`<button data-crumb="${i}">${lab(i)}${esc(firstName(all[i]))}</button><span class="sep" aria-hidden="true">›</span>`;
+ return h+`<b class="cur" aria-current="page">${lab(all.length-1)}${esc(byId[pid].name)}</b>`}
 function fvSvg(){const T=$('fvTree'),S=$('fvSvg');if(!T||!S)return;const tr=T.getBoundingClientRect();
  const R=el=>{const r=el.getBoundingClientRect();return {l:r.left-tr.left,t:r.top-tr.top,r:r.right-tr.left,b:r.bottom-tr.top,cx:(r.left+r.right)/2-tr.left,cy:(r.top+r.bottom)/2-tr.top,w:r.width}};
  let d='',dp='',dx='';const F=T.querySelector('.card.f');if(!F)return;const f=R(F),pid=FV.pid;
@@ -5258,17 +5275,44 @@ function fvSvg(){const T=$('fvTree'),S=$('fvSvg');if(!T||!S)return;const tr=T.ge
  S.setAttribute('width',T.scrollWidth);S.setAttribute('height',T.scrollHeight);
  S.innerHTML=`<path d="${d}" fill="none" stroke="#8caaff" stroke-opacity=".75" stroke-width="2"/><path d="${dp}" fill="none" stroke="#ff5a8c" stroke-width="2"/><path class="xl" d="${dx}" fill="none" stroke="#ff7ab8" stroke-width="2" stroke-dasharray="6 5"/>`}
 let fvCrossList=[];
-function fvRender(pid){const o=fvHTML(pid);fvCrossList=o.cross;$('fv').classList.toggle('fvph',isPhoneW());$('fvTree').className=o.stk?'stk':'wide';$('fvTree').innerHTML=o.h;$('fvCrumb').innerHTML=fvCrumbs(pid);
+function fvRender(pid){const o=fvHTML(pid);fvCrossList=o.cross;$('fv').classList.toggle('fvph',isPhoneW());$('fvTree').className=o.stk?'stk':'wide';$('fvTree').innerHTML=o.h;$('fvCrumb').innerHTML=fvCrumbs(pid);$('fvCrumb').scrollLeft=1e5;
  $('fvBack').disabled=false;$('fvScroll').scrollTop=0;fvSvg();
  const xl=$('fvXL');if(xl)xl.innerHTML=o.cross.length?'<div class="h3">Cross-links in view</div><ul>'+o.cross.map(c=>`<li>${esc(byId[c.b].name)} is also ${esc(byId[c.a].name)}'s ${esc(c.r.kin)} (both descend from ${esc(viaTxt(c.r))}).</li>`).join('')+'</ul>':''}
 /* scene placement */
-function fvCamera(pid){const c=G.camera(),n=nById(pid),ctr=new THREE.Vector3(n.x||0,n.y||0,n.z||0),g=$('g').getBoundingClientRect(),W=g.width||innerWidth,H=g.height||innerHeight;
+function fvCamera(pid,h){const c=G.camera(),n=nById(pid),ctr=h?new THREE.Vector3(...h):new THREE.Vector3(n.x||0,n.y||0,n.z||0),g=$('g').getBoundingClientRect(),W=g.width||innerWidth,H=g.height||innerHeight;
  const dir=c.position.clone().sub(ctr);dir.y=0;if(dir.lengthSq()<1)dir.set(0,0,1);dir.normalize();
  const th=Math.tan(c.fov*Math.PI/360),D=H/(2*th*2.2),fwd=dir.clone().negate(),rt=new THREE.Vector3().crossVectors(fwd,new THREE.Vector3(0,1,0)).normalize(),up=new THREE.Vector3().crossVectors(rt,fwd).normalize();
  return {ctr,cp:ctr.clone().add(dir.clone().multiplyScalar(D)),rt,up,hh:D*th,hw:D*th*(W/H)}}
+/* ---- navigation morph (FLIP, Web Animations API) ---- */
+function fvSnap(T){const m=new Map();T.querySelectorAll('.card[data-fid]').forEach(c=>m.set(c.dataset.fid,{r:c.getBoundingClientRect(),el:c.cloneNode(true)}));return m}
+function fvKill(){if(!fvM)return;clearTimeout(fvM.t);fvM.anims.forEach(a=>{try{a.cancel()}catch(e){}});fvM.layer.remove();fvM.cards.forEach(c=>c.style.willChange='');fvDots=null;$('fv').classList.remove('morph');fvM=null}
+function fvLayer(){const s=$('fvScroll').getBoundingClientRect(),L=document.createElement('div');L.className='fvGhosts';L.setAttribute('aria-hidden','true');Object.assign(L.style,{left:s.left+'px',top:s.top+'px',width:s.width+'px',height:s.height+'px'});$('fv').append(L);return {L,s}}
+function fvGhost(L,s,o,kf,opt,anims){const g=o.el;g.removeAttribute('data-fid');g.removeAttribute('tabindex');g.removeAttribute('role');g.classList.add('ghost');
+ Object.assign(g.style,{left:(o.r.left-s.left)+'px',top:(o.r.top-s.top)+'px',width:o.r.width+'px',height:o.r.height+'px'});L.append(g);const an=g.animate(kf,opt);an.onfinish=()=>g.remove();anims.push(an)}
+function fvRoleOf(c){return c.classList.contains('par')?'parent':c.classList.contains('sp')?'spouse':c.classList.contains('kid')?'child':c.classList.contains('sib')?'sibling':''}
+function fvPill(T,prev){const c=prev&&T.querySelector(`.card[data-fid="${CSS.escape(prev)}"]`);if(!c)return;const role=fvRoleOf(c);if(!role)return;
+ const s=document.createElement('span');s.className='fvRole';s.setAttribute('aria-hidden','true');s.textContent=`${firstName(prev)} — now shown as ${role}`;c.append(s);
+ s.animate([{opacity:0},{opacity:1,offset:.12},{opacity:1,offset:.85},{opacity:0}],{duration:FT.pill,fill:'forwards'}).onfinish=()=>s.remove()}
+function fvDone(T){const f=T.querySelector('.card.f .nm');if(f&&!(document.activeElement&&document.activeElement.id==='q')){f.tabIndex=-1;f.focus({preventScroll:true})}}
+function fvMorph(T,old,prev,fwd){const D=isPhoneW()?FT.morphPh:FT.morph,E='cubic-bezier(.2,.8,.2,1)',sg=fwd?1:-1,anims=[],fv=$('fv'),S=$('fvSvg');
+ const cards=[...T.querySelectorAll('.card[data-fid]')],fin=new Map(cards.map(c=>[c,c.getBoundingClientRect()])); // final layout, recorded before any transform
+ fvDots=new Map();T.querySelectorAll('[data-fid] .dot,[data-more="kids"]').forEach(d=>fvDots.set(d,d.getBoundingClientRect()));
+ const {L,s}=fvLayer(),now=new Set(cards.map(c=>c.dataset.fid));fvM={anims,layer:L,cards,t:0};fv.classList.add('morph');
+ old.forEach((o,fid)=>{if(now.has(fid)||o.r.bottom<s.top||o.r.top>s.bottom)return;fvGhost(L,s,o,[{opacity:1,transform:'none'},{opacity:0,transform:`translateY(${12*sg}px)`}],{duration:200,easing:'ease-out',fill:'forwards'},anims)});
+ const tops=[...new Set(cards.filter(c=>!old.has(c.dataset.fid)).map(c=>Math.round(fin.get(c).top/6)))].sort((a,b)=>a-b),st=D*.3,dur=D-st-7*25;
+ cards.forEach(c=>{const n=fin.get(c),o=old.get(c.dataset.fid);c.style.willChange='transform,opacity';
+  if(o){const k=Math.max(.5,Math.min(2,o.r.width/n.width)),dx=o.r.left+o.r.width/2-(n.left+n.width/2),dy=o.r.top+o.r.height/2-(n.top+n.height/2); // uniform scale: no squashed text
+   anims.push(c.animate([{transform:`translate(${dx}px,${dy}px) scale(${k})`},{transform:'none'}],{duration:D,easing:E}))}
+  else{const row=Math.min(7,Math.max(0,tops.indexOf(Math.round(n.top/6))));anims.push(c.animate([{opacity:0,transform:`translateY(${12*sg}px)`},{opacity:1,transform:'none'}],{duration:dur,delay:st+row*25,easing:E,fill:'backwards'}))}});
+ if(S)S.style.opacity=0;
+ setTimeout(()=>{if(fvM&&fvM.anims===anims)fv.classList.remove('morph')},D*.45); // glow pseudo-element fades in as the ring arrives
+ fvM.t=setTimeout(()=>{if(!fvM||fvM.anims!==anims)return;L.remove();cards.forEach(c=>c.style.willChange='');fvDots=null;fvM=null;fv.classList.remove('morph');
+  fvSvg();const S2=$('fvSvg');if(S2){S2.style.opacity='';S2.animate([{opacity:0},{opacity:1}],{duration:150})}fvDone(T)},D+10)}
+function fvGlideCam(pid){const h=fvHome.get(pid),n=nById(pid),tg=new THREE.Vector3(...(h||[n.x||0,n.y||0,n.z||0])),o=fvCam.ctr,v=tg.clone().sub(o),Lm=v.length(),cap=fvCam.hw*4; // cap only very long jumps (> ~2 screen widths)
+ if(Lm>cap)tg.copy(o).add(v.multiplyScalar(cap/Lm));return fvCamera(pid,[tg.x,tg.y,tg.z])}
 function fvTargets(){const g=$('g').getBoundingClientRect(),W=g.width,H=g.height,c=fvCam,m=new Map(),T=$('fvTree');
  const fb=T.querySelector('[data-more="kids"]')||T.querySelector('.card.f');
- FV.set.forEach(x=>{const el=T.querySelector(`[data-fid="${CSS.escape(x)}"] .dot`)||(fb.classList.contains('more')?fb:fb.querySelector('.dot'));const r=el.getBoundingClientRect();
+ FV.set.forEach(x=>{const el=T.querySelector(`[data-fid="${CSS.escape(x)}"] .dot`)||(fb.classList.contains('more')?fb:fb.querySelector('.dot'));const r=fvRect(el);
   const nx=((r.left+r.right)/2-g.left)/W*2-1,ny=1-((r.top+r.bottom)/2-g.top)/H*2;
   m.set(x,[c.ctr.x+c.rt.x*nx*c.hw+c.up.x*ny*c.hh,c.ctr.y+c.rt.y*nx*c.hw+c.up.y*ny*c.hh,c.ctr.z+c.rt.z*nx*c.hw+c.up.z*ny*c.hh])});return m}
 const setN=(n,x,y,z)=>{n.x=n.fx=x;n.y=n.fy=y;n.z=n.fz=z;if(n.__threeObj)n.__threeObj.position.set(x,y,z)};
@@ -5282,25 +5326,32 @@ function tweenTo(targets,ms,done){cancelAnimationFrame(fvAnim);fvAnim=0;const it
  const step=()=>{const u=ms>0?Math.min(1,(performance.now()-t0)/ms):1,e=E(u);items.forEach(it=>setN(it.n,it.a[0]+(it.b[0]-it.a[0])*e,it.a[1]+(it.b[1]-it.a[1])*e,it.a[2]+(it.b[2]-it.a[2])*e));
   if(u<1)fvAnim=requestAnimationFrame(step);else fin()};step()}
 function fvCorrect(k){if(!FV||FV.mode!=='A'||fvAnim||!fvCam)return;const cam=G.camera();cam.updateMatrixWorld();const g=$('g').getBoundingClientRect(),T=$('fvTree'),c=fvCam,fb=T.querySelector('[data-more="kids"]')||T.querySelector('.card.f');
- FV.set.forEach(x=>{const n=nById(x),el=T.querySelector(`[data-fid="${CSS.escape(x)}"] .dot`)||(fb.classList.contains('more')?fb:fb.querySelector('.dot'));if(!el)return;const r=el.getBoundingClientRect(),tx=((r.left+r.right)/2-g.left)/g.width*2-1,ty=1-((r.top+r.bottom)/2-g.top)/g.height*2;
+ FV.set.forEach(x=>{const n=nById(x),el=T.querySelector(`[data-fid="${CSS.escape(x)}"] .dot`)||(fb.classList.contains('more')?fb:fb.querySelector('.dot'));if(!el)return;const r=fvRect(el),tx=((r.left+r.right)/2-g.left)/g.width*2-1,ty=1-((r.top+r.bottom)/2-g.top)/g.height*2;
   const p=new THREE.Vector3(n.x,n.y,n.z).project(cam),dx=(tx-p.x)*c.hw,dy=(ty-p.y)*c.hh;setN(n,n.x+c.rt.x*dx+c.up.x*dy,n.y+c.rt.y*dx+c.up.y*dy,n.z+c.rt.z*dx+c.up.z*dy)});
  if(k>0)requestAnimationFrame(()=>fvCorrect(k-1))}
 function fvSync(){if(FV&&FV.mode==='A'&&!fvAnim){fvTargets().forEach((b,x)=>setN(nById(x),...b));fvCorrect(2)}}
 /* open / refocus / close */
-function fvShow(pid){const was=!!FV,mode=(G&&!RM.matches)?'A':'B',g=fvGroups(pid);
- FV={pid,set:g.set,mode};document.body.classList.add('fvOn');const fv=$('fv'),T=$('fvTree');
+function fvShow(pid){const prev=FV&&FV.pid,was=!!FV,mode=(G&&!RM.matches)?'A':'B',g=fvGroups(pid),fwd=fvFwd;fvFwd=true;
+ const fv=$('fv'),T=$('fvTree'),hop=was&&prev!==pid,MO=hop&&FX.on&&!RM.matches,old=hop?fvSnap(T):null,oldT=hop&&RM.matches?{r:T.getBoundingClientRect(),el:T.cloneNode(true)}:null;fvKill();if(hop)fvLockUntil=performance.now()+FT.lock;
+ FV={pid,set:g.set,mode};document.body.classList.add('fvOn');
  fv.classList.toggle('A',mode==='A');fv.classList.toggle('B',mode==='B');
  const rm=mode==='B'&&RM.matches;fv.style.setProperty('--fvT',(rm?FT.rm:200)+'ms');T.style.setProperty('--fvC',(rm||mode==='B'?FT.rm:200)+'ms');
- T.style.transition='none';T.style.opacity=0;fvRender(pid);void T.offsetWidth;T.style.transition='';fv.classList.add('on');requestAnimationFrame(()=>fv.classList.add('vis'));
+ T.style.transition='none';T.style.opacity=MO?1:0;fvRender(pid);void T.offsetWidth;T.style.transition='';fv.classList.add('on');requestAnimationFrame(()=>fv.classList.add('vis'));
+ if(MO)fvMorph(T,old,prev,fwd);
+ else if(oldT){const {L,s}=fvLayer(),anims=[];oldT.el.querySelectorAll('[data-fid]').forEach(e=>{e.removeAttribute('data-fid');e.removeAttribute('tabindex')});fvGhost(L,s,oldT,[{opacity:1},{opacity:0}],{duration:FT.rm,fill:'forwards'},anims);fvM={anims,layer:L,cards:[],t:setTimeout(fvKill,FT.rm+20)}} // reduced motion: 150 ms crossfade
+ if(hop){fvPill(T,prev);const cb=$('fvCrumb').querySelector('.cur');if(cb&&fwd&&!RM.matches)cb.animate([{opacity:0,transform:'translateX(24px)'},{opacity:1,transform:'none'}],{duration:FT.crumb,easing:'cubic-bezier(.2,.8,.2,1)'});
+  const r=relW(prev,pid);fvLive.textContent=`Now showing ${byId[pid].name}${r?', '+r+' of '+byId[prev].name:''}. ${g.P.length} parents, ${g.S.length} spouses, ${g.C.length} children, ${g.B.length} siblings.`}
+ else fvLive.textContent=`Focus view: ${byId[pid].name}.`;
  if(isPhoneW())$('person').hidden=true;clearTimeout(fvTimer);
  if(mode==='A'){const ctl=G.controls();if(ctl)ctl.enabled=false;G.enableNodeDrag(false);G.camera().clearViewOffset();G.camera().updateProjectionMatrix();
-  if(!was||!fvCam){fvCam=fvCamera(pid);const c=fvCam;G.cameraPosition({x:c.cp.x,y:c.cp.y,z:c.cp.z},{x:c.ctr.x,y:c.ctr.y,z:c.ctr.z},FT.move)}
-  refresh();const ms=was?FT.refocus:FT.move;
+  if(hop&&fvCam&&FX.on&&FX.glide&&!RM.matches){fvCam=fvGlideCam(pid);const c=fvCam;G.cameraPosition({x:c.cp.x,y:c.cp.y,z:c.cp.z},{x:c.ctr.x,y:c.ctr.y,z:c.ctr.z},FT.glide)} // camera glide == sphere tween length, starts first => finishes no later
+  else if(!was||!fvCam){fvCam=fvCamera(pid);const c=fvCam;G.cameraPosition({x:c.cp.x,y:c.cp.y,z:c.cp.z},{x:c.ctr.x,y:c.ctr.y,z:c.ctr.z},FT.move)}
+  refresh();const ms=was?(MO?FT.glide:FT.refocus):FT.move;
   requestAnimationFrame(()=>{if(!FV||FV.pid!==pid)return;tweenTo(fvTargets(),ms)});
-  fvTimer=setTimeout(()=>{if(FV&&FV.pid===pid){T.style.opacity=1;fvSvg()}},was?FT.refocus-200:FT.move)}
- else{refresh();fvTimer=setTimeout(()=>{T.style.opacity=1;fvSvg()},was?20:10)}
- document.documentElement.scrollTop=document.body.scrollLeft=document.documentElement.scrollLeft=0;const fc=T.querySelector('.card.f');if(fc&&!(document.activeElement&&document.activeElement.id==='q'))fc.focus({preventScroll:true})}
-function fvClose(){if(!FV)return;const pid=FV.pid,mode=FV.mode;FV=null;clearTimeout(fvTimer);document.body.classList.remove('fvOn');
+  if(!MO)fvTimer=setTimeout(()=>{if(FV&&FV.pid===pid){T.style.opacity=1;fvSvg();if(was)fvDone(T)}},was?(RM.matches?20:FT.refocus-200):FT.move)}
+ else{refresh();if(!MO)fvTimer=setTimeout(()=>{T.style.opacity=1;fvSvg();if(was)fvDone(T)},was?20:10)}
+ document.documentElement.scrollTop=document.body.scrollLeft=document.documentElement.scrollLeft=0;const fc=T.querySelector('.card.f');if(!was&&fc&&!(document.activeElement&&document.activeElement.id==='q'))fc.focus({preventScroll:true})}
+function fvClose(){if(!FV)return;fvKill();const pid=FV.pid,mode=FV.mode;FV=null;clearTimeout(fvTimer);document.body.classList.remove('fvOn');
  const fv=$('fv');$('fvTree').style.opacity=0;fv.classList.remove('vis');setTimeout(()=>{if(!FV)fv.classList.remove('on')},mode==='A'?200:FT.rm);closeHow();
  if(G){const ctl=G.controls();if(ctl)ctl.enabled=true;G.enableNodeDrag(true);
   if(mode==='A'||pinned.size){const h=fvHome.get(pid)||[nById(pid).x,nById(pid).y,nById(pid).z];tweenTo(new Map(),RM.matches?0:FT.exit);fly({x:h[0],y:h[1],z:h[2]},200,RM.matches?0:FT.exit)}
@@ -5308,7 +5359,7 @@ function fvClose(){if(!FV)return;const pid=FV.pid,mode=FV.mode;FV=null;clearTime
  const xl=$('fvXL');if(xl)xl.innerHTML='';
  if(isPhoneW()&&focus){$('person').hidden=false;setSheet(0)}else applyOffset()}
 function fvExitNav(){const st=history.state;fvClose();if(st&&st.fv)history.go(-st.depth)}
-function fvHist(pid,push,fromPop){if(fromPop)return;const st=history.state,d=st&&st.fv?st.depth:0;
+function fvHist(pid,push,fromPop){fvFwd=!!push;if(fromPop)return;const st=history.state,d=st&&st.fv?st.depth:0;
  try{if(d&&!push)history.replaceState({fv:pid,hist:hist.slice(),depth:d},'');else history.pushState({fv:pid,hist:hist.slice(),depth:d+1},'')}catch(e){}}
 addEventListener('popstate',e=>{const st=e.state;if(st&&st.fv){hist=st.hist.slice();select(st.fv,false,true)}else if(FV)fvClose()});
 /* how-related sheet */
@@ -5321,14 +5372,14 @@ $('fvHow').addEventListener('click',e=>{if(e.target.id==='fvHow'||e.target.id===
 $('fv').addEventListener('click',e=>{const b=e.target.closest('.badge');if(b){e.stopPropagation();openHow(b.dataset.pair);return}
  const m=e.target.closest('[data-more]');if(m&&FV){const pid=FV.pid;if(m.dataset.more==='kids')fvShowAll[pid]=!fvShowAll[pid];else fvSibAll[pid]=!fvSibAll[pid];
   const sc=$('fvScroll').scrollTop;fvRender(pid);$('fvTree').style.opacity=1;$('fvScroll').scrollTop=sc;if(FV.mode==='A')tweenTo(fvTargets(),RM.matches?0:FT.refocus);return}
- const cr=e.target.closest('[data-crumb]');if(cr){const i=+cr.dataset.crumb;if(i<0){fvExitNav();return}const st=history.state,steps=hist.length-i;
+ const cr=e.target.closest('[data-crumb]');if(cr&&fvLocked())return;if(cr){const i=+cr.dataset.crumb;if(i<0){fvExitNav();return}const st=history.state,steps=hist.length-i;
   if(st&&st.fv&&st.depth>steps)history.go(-steps);else{const t=hist[i];hist=hist.slice(0,i);select(t,false)}return}
- const c=e.target.closest('[data-fid]');if(c&&FV&&c.dataset.fid!==FV.pid)select(c.dataset.fid,true)});
+ const c=e.target.closest('[data-fid]');if(c&&fvLocked())return;if(c&&FV&&c.dataset.fid!==FV.pid)select(c.dataset.fid,true)});
 $('fv').addEventListener('keydown',e=>{const c=e.target.closest&&e.target.closest('.card[data-fid]');if(c&&e.target===c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();c.click()}});
-$('fvBack').onclick=()=>goBack();$('fv3d').onclick=fvExitNav;
+$('fvBack').onclick=()=>{if(!fvLocked())goBack()};$('fv3d').onclick=fvExitNav;
 $('fvScroll').addEventListener('scroll',()=>{if(fvScrollRaf)return;fvScrollRaf=requestAnimationFrame(()=>{fvScrollRaf=0;fvSync()})},{passive:true});
 addEventListener('resize',()=>{if(!FV)return;clearTimeout(fvTimer);fvTimer=setTimeout(()=>{if(!FV)return;fvRender(FV.pid);$('fvTree').style.opacity=1;if(FV.mode==='A'){G.camera().clearViewOffset();fvCam=fvCamera(FV.pid);const c=fvCam;G.cameraPosition({x:c.cp.x,y:c.cp.y,z:c.cp.z},{x:c.ctr.x,y:c.ctr.y,z:c.ctr.z},0);tweenTo(fvTargets(),0)}},150)});
-window.__fv={get on(){return !!FV},get mode(){return FV&&FV.mode},get pid(){return FV&&FV.pid},get pinned(){return pinned.size},get pinnedNodes(){return nodes.filter(n=>n.fx!=null).length},get tweening(){return !!fvAnim},bloodRel,select:(a,b)=>select(a,b),exit:fvExitNav,reset:()=>reset(),hist:()=>hist.slice()};
+window.__fv={FX,FT,get cam(){if(!G)return null;const c=G.camera().position;return {x:c.x,y:c.y,z:c.z,hw:fvCam&&fvCam.hw}},get morphing(){return !!fvM},get on(){return !!FV},get mode(){return FV&&FV.mode},get pid(){return FV&&FV.pid},get pinned(){return pinned.size},get pinnedNodes(){return nodes.filter(n=>n.fx!=null).length},get tweening(){return !!fvAnim},bloodRel,select:(a,b)=>select(a,b),exit:fvExitNav,reset:()=>reset(),hist:()=>hist.slice()};
 
 /* ---------- menu (phone) ---------- */
 function openMenu(){$('ctrls').dataset.open='true';$('menuBtn').setAttribute('aria-expanded','true');$('colorBtn').focus()}
@@ -5362,7 +5413,7 @@ res.onclick=e=>{const d=e.target.closest('[data-id]');if(d){q.value=byId[d.datas
 /* ---------- keyboard ---------- */
 document.addEventListener('keydown',e=>{
  if(e.key==='/'&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();q.focus();q.select();return}
- if(e.key==='Escape'){if(closeHow()){e.preventDefault();return}if(!$('colorList').hidden){$('colorList').hidden=true;$('colorBtn').focus()}else if($('ctrls').dataset.open==='true')closeMenu();else if(res.children.length){closeRes();q.focus()}else if(FV)fvExitNav();else if(!$('person').hidden)closeInfo()}});
+ if(e.key==='Escape'){if(closeHow()){e.preventDefault();return}if(!$('colorList').hidden){$('colorList').hidden=true;$('colorBtn').focus()}else if($('ctrls').dataset.open==='true')closeMenu();else if(res.children.length){closeRes();q.focus()}else if(FV){if(!fvLocked())goBack()}else if(!$('person').hidden)closeInfo()}});
 /* ---------- legend ---------- */
 function legend(){const items=colorBy==='family'?Object.entries(FAM_COL):GEN_COL.slice(0,1+Math.max(...people.map(p=>p.generation))).map((c,i)=>['Generation '+i,c]);
  $('legend').innerHTML=items.map(([k,c])=>`<div><i style="background:${c}"></i>${esc(k)}</div>`).join('')+'<div><span class="ln" style="border-top:2px solid #ff5a8c"></span>spouse</div><div><span class="ln" style="border-top:1px solid #8caaff"></span>parent → child</div>'}
