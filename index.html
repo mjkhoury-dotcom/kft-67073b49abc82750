@@ -197,17 +197,17 @@ body.fvOn .fab,body.fvOn #help{display:none!important}
 @media (max-width:700px){#fvCrumb{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}#fvCrumb::-webkit-scrollbar{display:none}#fvCrumb button{max-width:150px}#fvCrumb b.cur{padding-right:12px}}
 
 /* ===== divorce + deceased ===== */
-.wed.div{display:inline-flex;flex-direction:column;align-items:center;gap:3px;padding:0 2px}
+.wed.div{display:inline-flex;flex-direction:column;align-items:center;gap:2px;padding:0 2px;opacity:.8}
 .wed.div .dvl{display:flex;align-items:center;gap:3px}
-.wed.div .dvl i{display:block;width:18px;border-top:2px dashed var(--div,#a07080)}
-.wed.div .dvl b{font-size:18px;font-weight:800;line-height:1;color:var(--divMark,#ff8a8a);letter-spacing:-2px;transform:skewX(-10deg)}
-.wed.div small{font-size:16px;font-weight:700;line-height:1;letter-spacing:.04em;text-transform:uppercase;padding:3px 6px;border-radius:4px;color:var(--divTagInk,#1a0f14);background:var(--divTag,#c79aa8)}
-.stk .wed.div{flex-direction:row;gap:8px;padding:2px 0}.stk .wed.div .dvl{flex-direction:column;gap:1px}.stk .wed.div .dvl i{width:0;height:8px;border-top:0;border-left:2px dashed var(--div,#a07080)}
-.card.sp.div{border-style:dashed;border-color:var(--div,#a07080);background:var(--divBg,#1a1520f0);filter:saturate(.35)}
+.wed.div .dvl i{display:block;width:14px;border-top:1px dashed var(--div,#a07080)}
+.wed.div .dvl b{font-size:12px;font-weight:400;line-height:1;color:var(--div,#a07080);letter-spacing:-1px;transform:skewX(-10deg)}
+.wed.div small{font-size:12px;font-weight:400;font-style:italic;line-height:1;letter-spacing:.02em;text-transform:lowercase;padding:0;border-radius:0;color:var(--divTagInk,#a07080);background:none}
+.stk .wed.div{flex-direction:row;gap:8px;padding:2px 0}.stk .wed.div .dvl{flex-direction:column;gap:1px}.stk .wed.div .dvl i{width:0;height:8px;border-top:0;border-left:1px dashed var(--div,#a07080)}
+.card.sp.div{border-style:dashed;border-color:var(--div,#a07080);background:var(--divBg,#1a1520f0);filter:saturate(.35);opacity:.9}
 .card.sp.div .nm{color:var(--divName,#d9cfd4)}.card.sp.div .sb{color:var(--divSub,#c9b9c0)}
 #fv.A .card.sp.div{background:radial-gradient(circle at 20px 50%,#0000 0 11px,var(--divBg,#1a1520f0) 12px)}
-#fvSvg .dvm rect{fill:var(--divTag,#c79aa8)}#fvSvg .dvm text{font:700 16px system-ui,sans-serif;fill:var(--divTagInk,#1a0f14);letter-spacing:.5px}
-#fvSvg .dvm .brk{font-size:18px;font-weight:800;fill:var(--divMark,#ff8a8a);paint-order:stroke;stroke:var(--panel);stroke-width:4px}
+#fvSvg .dvm text{font:italic 400 12px system-ui,sans-serif;fill:var(--divTagInk,#a07080);letter-spacing:.2px}
+#fvSvg .dvm .brk{font-size:12px;font-weight:400;fill:var(--div,#a07080);paint-order:stroke;stroke:var(--panel);stroke-width:3px}
 .card.dec .nm{color:var(--decInk,#D9DCEB)}.card.dec .dot{opacity:.6}#fv.A .card.dec .dot{border-style:dashed;opacity:.85}
 
 /* ===== 2026-10-28 review fixes (P2/P3) ===== */
@@ -275,7 +275,7 @@ html[data-theme=book] .card.f::after{box-shadow:none}
 html[data-theme=book] .card.f .sb{font-variant:small-caps;letter-spacing:.04em}
 html[data-theme=book] .card.star .sb{color:var(--goldInk)}
 html[data-theme=book] .card.pill{border-radius:3px}
-html[data-theme=book] .card.sp.div{border-style:dashed;border-width:2px}
+html[data-theme=book] .card.sp.div{border-style:dashed;border-width:1px}
 html[data-theme=book] .card.dec .nm{color:var(--decInk)}
 html[data-theme=book] .ph{border-radius:2px}
 html[data-theme=book] .badge span{border-radius:2px}
@@ -309,10 +309,9 @@ html[data-theme=book] .bkc{display:block;position:absolute;width:40px;height:40p
 @media (max-width:700px){html[data-theme=book] #side>.bkc,html[data-theme=book] #fvTree>.bkc{display:none}}
 @media (min-width:701px){html[data-theme=book] #ctrls>.bkc{display:none}}
 html[data-theme=book] #fvTree.stk>.bkc{display:none}
-html[data-theme=book]{--divMark:#7A2E1F;--divTag:#E2CFC2;--divTagInk:#5C2216;--divBg:#E6DDCC;--divName:#4A3C2E;--divSub:#5A4630}
+html[data-theme=book]{--divMark:#8B7355;--divTag:none;--divTagInk:#6B5738;--divBg:#E6DDCC;--divName:#4A3C2E;--divSub:#5A4630}
 html[data-theme=book] #fv.A .card.sp.div{background:radial-gradient(circle at 20px 50%,#0000 0 11px,#E6DDCCf2 12px)}
 html[data-theme=book] #fvSvg .dvm text{font-family:Palatino,Georgia,serif}
-html[data-theme=book] .wed.div small{border:1px solid #7A2E1F}
 
 html[data-theme=book] #person .h3,html[data-theme=book] .h3{color:var(--goldInk,#6E5520)!important;border-color:rgba(176,141,58,.5)!important}
 html[data-theme=book] #fvSvg .pl{stroke:#6B4A2B!important;stroke-opacity:.9!important;stroke-width:4px!important;stroke-linecap:round;stroke-linejoin:round}
@@ -5259,7 +5258,7 @@ try{
  const SEG=8;let LB=null;const _c=new THREE.Color();
  const colorLinkBatch=()=>{if(!LB)return;const C=LB.geometry.attributes.color.array;let k=0;
   links.forEach(l=>{const sp=l.type==='spouse',n=sp?SEG*2:2,hide=inBr(l),d=!!(FV||branch);let a0,a1;
-   if(sp){_c.set(TH.c(d?'#ff5a8c':(l.divorced?'#a07080':'#ff5a8c')));a0=a1=hide?0:(d?.06:.5)*.75} // 1px lines read brighter than the old sub-pixel tubes; alpha toned down to match
+   if(sp){_c.set(TH.c(d?'#ff5a8c':(l.divorced?'#a07080':'#ff5a8c')));a0=a1=hide?0:(d?.06:.5)*.75*(l.divorced?.65:1)} // divorced spouse links: dimmer than married ones // 1px lines read brighter than the old sub-pixel tubes; alpha toned down to match
    else{_c.set(TH.c(d?'#7896ff':'#8caaff'));const a=hide?0:(d?.05:.3)*.75;a0=a*.35;a1=Math.min(1,a*1.25)} // direction cue: brightens toward the child (replaces arrowheads)
    for(let v=0;v<n;v++){C[k++]=_c.r;C[k++]=_c.g;C[k++]=_c.b;C[k++]=sp?a0:(v?a1:a0)}});
   LB.geometry.attributes.color.needsUpdate=true};
@@ -5451,7 +5450,7 @@ function fvSvg(){const T=$('fvTree'),S=$('fvSvg');if(!T||!S)return;const tr=T.ge
  const sel=x=>T.querySelector(`[data-fid="${CSS.escape(x)}"]`);
  fvCrossList.forEach(o=>{const A=sel(o.a),B=sel(o.b);if(!A||!B)return;const a=R(A),b=R(B),mx=(a.cx+b.cx)/2,my=Math.min(a.t,b.t)-36;dx+=`M${a.cx},${a.t}Q${mx},${my} ${b.cx},${b.t}`});
  S.setAttribute('width',T.scrollWidth);S.setAttribute('height',T.scrollHeight);
- S.innerHTML=`<path class="pl" d="${d}" fill="none" style="stroke:var(--fvLink,#8caaff);stroke-opacity:var(--fvLinkO,.75);stroke-width:var(--fvLinkW,2px)"/><path class="sl" d="${dp}" fill="none" style="stroke:var(--fvSp,#ff5a8c);stroke-width:var(--fvLinkW,2px)"/><path class="dv" d="${dv}" fill="none" style="stroke:var(--div,#a07080);stroke-width:2px;stroke-dasharray:5 5"/><path class="xl" d="${dx}" fill="none" style="stroke:var(--cousinAlt,#ff7ab8);stroke-width:2px;stroke-dasharray:6 5"/>${dvm?`<g class="dvm"><rect x="${dvm.x-46}" y="${dvm.y-44}" width="92" height="26" rx="4"/><text x="${dvm.x}" y="${dvm.y-31}" text-anchor="middle" dominant-baseline="central">Divorced</text><text class="brk" x="${dvm.x}" y="${dvm.y}" text-anchor="middle" dominant-baseline="central">//</text></g>`:''}${fl?`<text class="fleur" x="${fl.x}" y="${fl.y}" text-anchor="middle" dominant-baseline="central">❦</text>`:''}`}
+ S.innerHTML=`<path class="pl" d="${d}" fill="none" style="stroke:var(--fvLink,#8caaff);stroke-opacity:var(--fvLinkO,.75);stroke-width:var(--fvLinkW,2px)"/><path class="sl" d="${dp}" fill="none" style="stroke:var(--fvSp,#ff5a8c);stroke-width:var(--fvLinkW,2px)"/><path class="dv" d="${dv}" fill="none" style="stroke:var(--div,#a07080);stroke-opacity:.8;stroke-width:1.25px;stroke-dasharray:4 5"/><path class="xl" d="${dx}" fill="none" style="stroke:var(--cousinAlt,#ff7ab8);stroke-width:2px;stroke-dasharray:6 5"/>${dvm?`<g class="dvm"><text x="${dvm.x+9}" y="${dvm.y+34}" text-anchor="start" dominant-baseline="central">divorced</text><text class="brk" x="${dvm.x}" y="${dvm.y}" text-anchor="middle" dominant-baseline="central">//</text></g>`:''}${fl?`<text class="fleur" x="${fl.x}" y="${fl.y}" text-anchor="middle" dominant-baseline="central">❦</text>`:''}`}
 let fvCrossList=[];
 /* phone/B siblings row scrolls sideways: show a fade + 'swipe' hint while chips are hidden past the edge */
 function fvPillFx(){const p=document.querySelector('#fvTree .pills');if(!p)return;const sec=p.parentNode,upd=()=>{const more=p.scrollWidth>p.clientWidth+2;sec.classList.toggle('ovf',more);sec.classList.toggle('end',!more||p.scrollLeft+p.clientWidth>=p.scrollWidth-4)};upd();p.addEventListener('scroll',upd,{passive:true});requestAnimationFrame(upd);setTimeout(upd,350)}
